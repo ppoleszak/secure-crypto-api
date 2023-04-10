@@ -3,7 +3,6 @@ package com.poleszak.securecryptoapi.service;
 import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.Cipher;
 import java.security.*;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
