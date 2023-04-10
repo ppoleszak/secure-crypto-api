@@ -1,51 +1,48 @@
 package com.poleszak.securecryptoapi.controller;
 
+import com.poleszak.securecryptoapi.dto.KeysDto;
+import com.poleszak.securecryptoapi.dto.VerificationRequest;
+import com.poleszak.securecryptoapi.service.AsymmetricEncryptionService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
+import java.security.NoSuchAlgorithmException;
 
 @RestController
-@RequestMapping("/api/crypto/asymmetric")
+@RequiredArgsConstructor
+@RequestMapping("/asymmetric")
 public class AsymmetricCryptoController {
 
-    private AsymmetricEncryptionService asymmetricEncryptionService;
+    private final AsymmetricEncryptionService asymmetricEncryptionService;
 
     @GetMapping("/key")
-    public ResponseEntity<Map<String, String>> getAsymmetricKey() {
-        Map<String, String> keyPair = asymmetricEncryptionService.generateKeyPair();
-        return ResponseEntity.ok(keyPair);
+    public ResponseEntity<String> generateKeys() throws NoSuchAlgorithmException {
+        return ResponseEntity.ok(asymmetricEncryptionService.generateKeys());
     }
 
     @PostMapping("/key")
-    public ResponseEntity<Void> setAsymmetricKey(@RequestBody Map<String, String> keyPair) {
-        asymmetricEncryptionService.setKeyPair(keyPair);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<String> setKeys(@RequestBody KeysDto keys) {
+        return ResponseEntity.ok(asymmetricEncryptionService.setKeys(keys.publicKey(), keys.privateKey()));
     }
 
     @PostMapping("/verify")
-    public ResponseEntity<String> verifyAsymmetric(@RequestBody String message) {
-        String signedMessage = asymmetricEncryptionService.sign(message);
-        return ResponseEntity.ok(signedMessage);
+    public ResponseEntity<Boolean> verify(@RequestBody VerificationRequest verificationRequest) {
+        return ResponseEntity.ok(asymmetricEncryptionService.verify(verificationRequest.message(), verificationRequest.signature()));
     }
 
     @PostMapping("/sign")
-    public ResponseEntity<Boolean> signAsymmetric(@RequestBody Map<String, String> request) {
-        String message = request.get("message");
-        String signature = request.get("signature");
-        boolean isVerified = asymmetricEncryptionService.verify(message, signature);
-        return ResponseEntity.ok(isVerified);
+    public ResponseEntity<String> sign(@RequestBody String message) {
+        return ResponseEntity.ok(asymmetricEncryptionService.sign(message));
     }
 
     @PostMapping("/encode")
-    public ResponseEntity<String> encodeAsymmetric(@RequestBody String message) {
-        String encoded = asymmetricEncryptionService.encode(message);
-        return ResponseEntity.ok(encoded);
+    public ResponseEntity<String> encrypt(@RequestBody String message) {
+        return ResponseEntity.ok(asymmetricEncryptionService.encrypt(message));
     }
 
     @PostMapping("/decode")
-    public ResponseEntity<String> decodeAsymmetric(@RequestBody String message) {
-        String decoded = asymmetricEncryptionService.decode(message);
-        return ResponseEntity.ok(decoded);
+    public ResponseEntity<String> decrypt(@RequestBody String encryptedMessage) {
+        return ResponseEntity.ok(asymmetricEncryptionService.decrypt(encryptedMessage));
     }
 }

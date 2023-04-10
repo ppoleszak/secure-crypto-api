@@ -1,54 +1,69 @@
 package com.poleszak.securecryptoapi.service;
 
+import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Cipher;
-import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.NoSuchAlgorithmException;
 
+import static java.util.Base64.getDecoder;
+import static java.util.Base64.getEncoder;
+import static javax.crypto.Cipher.DECRYPT_MODE;
+import static javax.crypto.Cipher.ENCRYPT_MODE;
+import static javax.crypto.KeyGenerator.getInstance;
+
 @Service
 public class SymmetricEncryptionService {
+    private SecretKey secretKey;
 
-    private SecretKey key;
+    public SymmetricEncryptionService() throws NoSuchAlgorithmException {
+        generateKey();
+    }
 
-    public String generateKey() {
-        KeyGenerator keyGen;
+    public String generateKey() throws NoSuchAlgorithmException {
+        var keyGenerator = getInstance("AES");
+        keyGenerator.init(128);
+        secretKey = keyGenerator.generateKey();
+
+        return exportKey();
+    }
+
+    public String exportKey() {
+        return getEncoder().encodeToString(secretKey.getEncoded());
+    }
+
+    public String setKey(String keyStr) {
+        var decodedKey = getDecoder().decode(keyStr);
+        secretKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
+
+        return "Key updated successfully";
+    }
+
+    public String encrypt(String message) {
         try {
-            keyGen = KeyGenerator.getInstance("AES");
-            keyGen.init(128);
-            key = keyGen.generateKey();
-            return DatatypeConverter.printHexBinary(key.getEncoded());
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Error generating key", e);
+            var cipher = Cipher.getInstance("AES");
+            cipher.init(ENCRYPT_MODE, secretKey);
+            var encryptedMessageBytes = cipher.doFinal(message.getBytes());
+
+            return getEncoder().encodeToString(encryptedMessageBytes);
+        } catch (Exception e) {
+            throw new RuntimeException("Error encrypting message", e);
         }
     }
 
-    public void setKey(String hexKey) {
-        byte[] decodedKey = DatatypeConverter.parseHexBinary(hexKey);
-        key = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
-    }
-
-    public String encode(String message) {
+    public String decrypt(String encryptedMessageJson) {
         try {
-            Cipher cipher = Cipher.getInstance("AES");
-            cipher.init(Cipher.ENCRYPT_MODE, key);
-            byte[] encrypted = cipher.doFinal(message.getBytes());
-            return DatatypeConverter.printHexBinary(encrypted);
-        } catch (Exception e) {
-            throw new RuntimeException("Error encoding message", e);
-        }
-    }
+            var encryptedMessage = new JSONObject(encryptedMessageJson).getString("message");
+            var cipher = Cipher.getInstance("AES");
+            cipher.init(DECRYPT_MODE, secretKey);
+            var encryptedMessageBytes = getDecoder().decode(encryptedMessage);
+            var decryptedMessageBytes = cipher.doFinal(encryptedMessageBytes);
 
-    public String decode(String encryptedMessage) {
-        try {
-            Cipher cipher = Cipher.getInstance("AES");
-            cipher.init(Cipher.DECRYPT_MODE, key);
-            byte[] decodedMessage = cipher.doFinal(DatatypeConverter.parseHexBinary(encryptedMessage));
-            return new String(decodedMessage);
+            return new String(decryptedMessageBytes);
         } catch (Exception e) {
-            throw new RuntimeException("Error decoding message", e);
+            throw new RuntimeException("Error decrypting message", e);
         }
     }
 }
