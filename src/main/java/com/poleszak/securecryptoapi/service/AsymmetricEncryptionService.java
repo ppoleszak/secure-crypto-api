@@ -10,7 +10,7 @@ import java.security.spec.X509EncodedKeySpec;
 
 import static java.util.Base64.getDecoder;
 import static java.util.Base64.getEncoder;
-import static javax.crypto.Cipher.getInstance;
+import static javax.crypto.Cipher.*;
 
 @Service
 public class AsymmetricEncryptionService {
@@ -55,7 +55,7 @@ public class AsymmetricEncryptionService {
     public String encrypt(String message) {
         try {
             var cipher = getInstance("RSA");
-            cipher.init(Cipher.ENCRYPT_MODE, keyPair.getPublic());
+            cipher.init(ENCRYPT_MODE, keyPair.getPublic());
             var encryptedMessageBytes = cipher.doFinal(message.getBytes());
 
             return getEncoder().encodeToString(encryptedMessageBytes);
@@ -68,7 +68,7 @@ public class AsymmetricEncryptionService {
         try {
             var encryptedMessage = new JSONObject(encryptedMessageJson).getString("message");
             var cipher = getInstance("RSA");
-            cipher.init(Cipher.DECRYPT_MODE, keyPair.getPrivate());
+            cipher.init(DECRYPT_MODE, keyPair.getPrivate());
             var encryptedMessageBytes = getDecoder().decode(encryptedMessage);
             var decryptedMessageBytes = cipher.doFinal(encryptedMessageBytes);
 
